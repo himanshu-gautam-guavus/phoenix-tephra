@@ -26,6 +26,8 @@ import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.AbstractService;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.MoreExecutors;
+
 import org.apache.twill.common.Cancellable;
 import org.apache.twill.common.Threads;
 import org.apache.twill.internal.zookeeper.SettableOperationFuture;
@@ -230,14 +232,14 @@ public class TephraZKClientService extends AbstractService implements ZKClientSe
                   // handle the failure
                   updateFailureResult(t, result, path, ignoreNodeExists);
                 }
-              });
+              }, MoreExecutors.directExecutor());
           }
 
           @Override
           public void onFailure(Throwable t) {
             result.setException(t);
           }
-        });
+        }, MoreExecutors.directExecutor());
       }
 
       /**
@@ -277,7 +279,7 @@ public class TephraZKClientService extends AbstractService implements ZKClientSe
         String parentPath = path.substring(0, path.lastIndexOf('/'));
         return (parentPath.isEmpty() && !"/".equals(path)) ? "/" : parentPath;
       }
-    });
+    }, MoreExecutors.directExecutor());
 
     return result;
   }

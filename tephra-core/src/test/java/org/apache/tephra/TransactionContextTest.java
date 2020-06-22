@@ -59,7 +59,7 @@ public class TransactionContextTest {
         @Override
         protected void configure() {
           TransactionManager txManager = new TransactionManager(conf);
-          txManager.startAndWait();
+          txManager.startAsync().awaitRunning();
           bind(TransactionManager.class).toInstance(txManager);
           bind(TransactionSystemClient.class).to(DummyTxClient.class).in(Singleton.class);
         }

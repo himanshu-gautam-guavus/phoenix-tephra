@@ -19,6 +19,7 @@
 package org.apache.tephra.persist;
 
 import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Maps;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.tephra.ChangeId;
@@ -166,7 +167,7 @@ public class TransactionSnapshot implements TransactionVisibilityState {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("timestamp", timestamp)
         .add("readPointer", readPointer)
         .add("writePointer", writePointer)

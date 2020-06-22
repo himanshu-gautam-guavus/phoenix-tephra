@@ -98,12 +98,12 @@ public class VisibilityFenceTest {
   @BeforeClass
   public static void before() {
     txManager = new TransactionManager(conf, new InMemoryTransactionStateStorage(), new TxMetricsCollector());
-    txManager.startAndWait();
+    txManager.startAsync().awaitRunning();
   }
 
   @AfterClass
   public static void after() {
-    txManager.stopAndWait();
+    txManager.stopAsync().awaitTerminated();
   }
 
   @Test

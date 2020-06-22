@@ -19,6 +19,7 @@
 package co.cask.tephra.persist;
 
 import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.io.Writable;
 import org.apache.tephra.ChangeId;
@@ -344,7 +345,7 @@ public class TransactionEdit implements Writable {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
       .add("writePointer", writePointer)
       .add("visibilityUpperBound", visibilityUpperBound)
       .add("commitPointer", commitPointer)

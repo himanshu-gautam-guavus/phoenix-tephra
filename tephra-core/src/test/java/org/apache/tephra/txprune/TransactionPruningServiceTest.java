@@ -93,7 +93,7 @@ public class TransactionPruningServiceTest {
 
     MockTxManager mockTxManager = new MockTxManager(conf);
     TransactionPruningService pruningService = new TestTransactionPruningService(conf, mockTxManager);
-    pruningService.startAndWait();
+    pruningService.startAsync().awaitRunning();
     // This will cause the pruning run to happen three times,
     // but we are interested in only first two runs for the assertions later
     int pruneRuns = TestTransactionPruningRunnable.getRuns();
@@ -101,7 +101,7 @@ public class TransactionPruningServiceTest {
     pruningService.pruneNow();
     pruningService.pruneNow();
     TestTransactionPruningRunnable.waitForRuns(pruneRuns + 3, 5, TimeUnit.MILLISECONDS);
-    pruningService.stopAndWait();
+    pruningService.stopAsync().awaitTerminated();
 
     // Assert inactive transaction bound that the plugins receive.
     // Both the plugins should get the same inactive transaction bound since it is
@@ -160,7 +160,7 @@ public class TransactionPruningServiceTest {
 
     MockTxManager mockTxManager = new MockTxManager(conf);
     TransactionPruningService pruningService = new TestTransactionPruningService(conf, mockTxManager);
-    pruningService.startAndWait();
+    pruningService.startAsync().awaitRunning();
     // This will cause the pruning run to happen three times,
     // but we are interested in only first two runs for the assertions later
     int pruneRuns = TestTransactionPruningRunnable.getRuns();
@@ -168,7 +168,7 @@ public class TransactionPruningServiceTest {
     pruningService.pruneNow();
     pruningService.pruneNow();
     TestTransactionPruningRunnable.waitForRuns(pruneRuns + 3, 5, TimeUnit.MILLISECONDS);
-    pruningService.stopAndWait();
+    pruningService.stopAsync().awaitTerminated();
 
     // Assert inactive transaction bound
     Assert.assertEquals(ImmutableList.of(110L * n - 1, 210L * n - 1),
@@ -268,9 +268,9 @@ public class TransactionPruningServiceTest {
 
     public static void waitForRuns(int runs, int timeout, TimeUnit unit) throws Exception {
       long timeoutMillis = unit.toMillis(timeout);
-      Stopwatch stopWatch = new Stopwatch();
+      Stopwatch stopWatch = Stopwatch.createUnstarted();
       stopWatch.start();
-      while (pruneRuns < runs && stopWatch.elapsedMillis() < timeoutMillis) {
+      while (pruneRuns < runs && stopWatch.elapsed(TimeUnit.MILLISECONDS) < timeoutMillis) {
         TimeUnit.MILLISECONDS.sleep(100);
       }
     }

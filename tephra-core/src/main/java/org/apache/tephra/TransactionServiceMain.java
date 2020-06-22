@@ -109,13 +109,13 @@ public class TransactionServiceMain {
     );
 
     ZKClientService zkClientService = injector.getInstance(ZKClientService.class);
-    zkClientService.startAndWait();
+    zkClientService.startAsync().awaitRunning();
 
     // start a tx server
     txService = injector.getInstance(TransactionService.class);
     try {
       LOG.info("Starting {}", getClass().getSimpleName());
-      txService.startAndWait();
+      txService.startAsync().awaitRunning();
     } catch (Exception e) {
       System.err.println("Failed to start service: " + e.getMessage());
     }
@@ -131,7 +131,7 @@ public class TransactionServiceMain {
     }
     try {
       if (txService.isRunning()) {
-        txService.stopAndWait();
+        txService.stopAsync().awaitTerminated();
       }
     } catch (Throwable e) {
       LOG.error("Failed to shutdown transaction service.", e);

@@ -46,11 +46,11 @@ public class ClientIdTest {
     conf.set(TxConstants.Manager.CFG_TX_RETAIN_CLIENT_ID, retention.toString());
     TransactionStateStorage txStateStorage = new InMemoryTransactionStateStorage();
     TransactionManager txManager = new TransactionManager(conf, txStateStorage, new TxMetricsCollector());
-    txManager.startAndWait();
+    txManager.startAsync().awaitRunning();
     try {
       testConflict(txManager, expectClientIdInProgress, expectClientIdCommitted);
     } finally {
-      txManager.stopAndWait();
+      txManager.stopAsync().awaitTerminated();
     }
   }
 

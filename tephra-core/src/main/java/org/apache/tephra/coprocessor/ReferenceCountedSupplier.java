@@ -53,7 +53,7 @@ public class ReferenceCountedSupplier<T extends Service> {
 
         // Instance has not been instantiated
         T serviceInstance = instanceSupplier.get();
-        serviceInstance.startAndWait();
+        serviceInstance.startAsync().awaitRunning();
         instance.set(serviceInstance);
       }
       int newCount = refCount.incrementAndGet();
@@ -83,7 +83,7 @@ public class ReferenceCountedSupplier<T extends Service> {
           }
 
           Service serviceInstance = instance.get();
-          serviceInstance.stopAndWait();
+          serviceInstance.stopAsync().awaitTerminated();
           instance.set(null);
         } catch (Exception ex) {
           LOG.warn(String.format("Exception while trying to stop Service %s.", instanceName), ex);

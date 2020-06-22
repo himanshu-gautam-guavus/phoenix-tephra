@@ -42,12 +42,12 @@ public class DefaultFenceWait implements FenceWait {
   @Override
   public void await(long timeout, TimeUnit timeUnit)
     throws TransactionFailureException, InterruptedException, TimeoutException {
-    Stopwatch stopwatch = new Stopwatch();
+    Stopwatch stopwatch = Stopwatch.createUnstarted();
     stopwatch.start();
     long sleepTimeMicros = timeUnit.toMicros(timeout) / 10;
     // Have sleep time to be within 1 microsecond and 500 milliseconds
     sleepTimeMicros = Math.max(Math.min(sleepTimeMicros, 500 * 1000), 1);
-    while (stopwatch.elapsedTime(timeUnit) < timeout) {
+    while (stopwatch.elapsed(timeUnit) < timeout) {
       txContext.start();
       try {
         txContext.finish();

@@ -83,7 +83,7 @@ public class TransactionStateCache extends AbstractIdleService implements Config
     }
 
     if (storage != null) {
-      storage.stop();
+      storage.stopAsync();
     }
   }
 
@@ -99,7 +99,7 @@ public class TransactionStateCache extends AbstractIdleService implements Config
         // as there are no relevant metrics to report
         this.storage = new HDFSTransactionStateStorage(conf, new SnapshotCodecProvider(conf),
                                                        new TxMetricsCollector());
-        this.storage.startAndWait();
+        this.storage.startAsync().awaitRunning();
         this.snapshotRefreshFrequency = conf.getLong(TxConstants.Manager.CFG_TX_SNAPSHOT_INTERVAL,
                                                      TxConstants.Manager.DEFAULT_TX_SNAPSHOT_INTERVAL) * 1000;
         this.initialized = true;
@@ -118,7 +118,7 @@ public class TransactionStateCache extends AbstractIdleService implements Config
   }
 
   private void reset() {
-    this.storage.stop();
+    this.storage.stopAsync();
     this.lastRefresh = 0;
     this.initialized = false;
   }

@@ -100,13 +100,13 @@ public class BalanceBooksTest {
     );
 
     zkClientService = injector.getInstance(ZKClientService.class);
-    zkClientService.startAndWait();
+    zkClientService.startAsync().awaitRunning();
 
     // start a tx server
     txService = injector.getInstance(TransactionService.class);
     try {
       LOG.info("Starting transaction service");
-      txService.startAndWait();
+      txService.startAsync().awaitRunning();
     } catch (Exception e) {
       LOG.error("Failed to start service: ", e);
       throw e;
@@ -118,10 +118,10 @@ public class BalanceBooksTest {
   @AfterClass
   public static void tearDown() throws Exception {
     if (txService != null) {
-      txService.stopAndWait();
+      txService.stopAsync().awaitTerminated();
     }
     if (zkClientService != null) {
-      zkClientService.stopAndWait();
+      zkClientService.stopAsync().awaitTerminated();
     }
     testUtil.shutdownMiniCluster();
   }

@@ -102,7 +102,7 @@ public class InMemoryTransactionService extends AbstractService {
   protected void doStart() {
     try {
       txManager = txManagerProvider.get();
-      txManager.startAndWait();
+      txManager.startAsync().awaitRunning();
       doRegister();
       LOG.info("Transaction Thrift service started successfully on " + getAddress());
       notifyStarted();
@@ -115,7 +115,7 @@ public class InMemoryTransactionService extends AbstractService {
   @Override
   protected void doStop() {
     undoRegister();
-    txManager.stopAndWait();
+    txManager.stopAsync().awaitTerminated();
     notifyStopped();
   }
 

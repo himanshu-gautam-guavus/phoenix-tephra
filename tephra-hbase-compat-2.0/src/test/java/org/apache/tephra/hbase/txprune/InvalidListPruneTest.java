@@ -85,7 +85,7 @@ public class InvalidListPruneTest extends AbstractHBaseTableTest {
 
     TransactionStateStorage txStateStorage = new InMemoryTransactionStateStorage();
     TransactionManager txManager = new TransactionManager(conf, txStateStorage, new TxMetricsCollector());
-    txManager.startAndWait();
+    txManager.startAsync().awaitRunning();
 
     // Do some transactional data operations
     txDataTable1 = TableName.valueOf("invalidListPruneTestTable1");
@@ -101,7 +101,7 @@ public class InvalidListPruneTest extends AbstractHBaseTableTest {
     }
 
     testUtil.flush(txDataTable1);
-    txManager.stopAndWait();
+    txManager.stopAsync().awaitTerminated();
 
     pruneStateTable = TableName.valueOf(conf.get(TxConstants.TransactionPruning.PRUNE_STATE_TABLE,
                                                  TxConstants.TransactionPruning.DEFAULT_PRUNE_STATE_TABLE));

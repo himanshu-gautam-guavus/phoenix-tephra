@@ -113,7 +113,7 @@ public class BalanceBooks implements Closeable {
     );
 
     zkClient = injector.getInstance(ZKClientService.class);
-    zkClient.startAndWait();
+    zkClient.startAsync().awaitRunning();
     txClient = injector.getInstance(TransactionServiceClient.class);
 
     createTableIfNotExists(conf, TABLE, new byte[][]{ FAMILY });
@@ -188,7 +188,7 @@ public class BalanceBooks implements Closeable {
     } catch (IOException ignored) { }
 
     if (zkClient != null) {
-      zkClient.stopAndWait();
+      zkClient.stopAsync().awaitTerminated();
     }
   }
 

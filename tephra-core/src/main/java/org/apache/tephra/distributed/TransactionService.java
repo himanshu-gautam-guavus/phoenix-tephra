@@ -95,7 +95,7 @@ public class TransactionService extends InMemoryTransactionService {
             LOG.error("Transaction manager aborted, stopping transaction service");
             TransactionService.this.abort(failure);
           }
-        }, MoreExecutors.sameThreadExecutor());
+        }, MoreExecutors.newDirectExecutorService());
 
         pruningService = createPruningService(conf, txManager);
 
@@ -107,13 +107,13 @@ public class TransactionService extends InMemoryTransactionService {
           .setIOThreads(ioThreads)
           .build(new TransactionServiceThriftHandler(txManager, pruningService));
         try {
-          server.startAndWait();
-          pruningService.startAndWait();
+          server.startAsync().awaitRunning();
+          pruningService.startAsync().awaitRunning();
           doRegister();
           LOG.info("Transaction Thrift Service started successfully on " + getAddress());
         } catch (Throwable t) {
           LOG.info("Transaction Thrift Service didn't start on " + server.getBindAddress());
-          leaderElection.stop();
+          leaderElection.stopAsync();
           notifyFailed(t);
         }
       }
@@ -123,12 +123,12 @@ public class TransactionService extends InMemoryTransactionService {
         ListenableFuture<State> stopFuture = null;
         if (pruningService != null && pruningService.isRunning()) {
           // Wait for pruning service to stop after un-registering from discovery
-          stopFuture = pruningService.stop();
+          stopFuture = pruningService.stopAsync();
         }
         // First stop the transaction server as un-registering from discovery can block sometimes.
         // That can lead to multiple transaction servers being active at the same time.
         if (server != null && server.isRunning()) {
-          server.stopAndWait();
+          server.stopAsync().awaitTerminated();
         }
         undoRegister();
 
@@ -172,7 +172,7 @@ public class TransactionService extends InMemoryTransactionService {
       // NOTE: if was a leader this will cause loosing of leadership which in callback above will
       //       de-register service in discovery service and stop the service if needed
       try {
-        Uninterruptibles.getUninterruptibly(leaderElection.stop(), 5, TimeUnit.SECONDS);
+        Uninterruptibles.getUninterruptibly(leaderElection.stopAsync(), 5, TimeUnit.SECONDS);
       } catch (TimeoutException te) {
         LOG.warn("Timed out waiting for leader election cancellation to complete");
       } catch (ExecutionException e) {

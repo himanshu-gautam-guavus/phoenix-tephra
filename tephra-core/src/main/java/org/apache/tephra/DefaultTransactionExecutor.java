@@ -55,7 +55,7 @@ public class DefaultTransactionExecutor extends AbstractTransactionExecutor {
                                     Iterable<TransactionAware> txAwares,
                                     RetryStrategy retryStrategy) {
 
-    super(MoreExecutors.sameThreadExecutor());
+    super(MoreExecutors.newDirectExecutorService());
     this.txAwares = ImmutableList.copyOf(txAwares);
     this.txClient = txClient;
     this.retryStrategy = retryStrategy;

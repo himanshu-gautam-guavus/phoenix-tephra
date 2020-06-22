@@ -101,7 +101,7 @@ public class TransactionServiceClient implements TransactionSystemClient {
     );
 
     ZKClientService zkClient = injector.getInstance(ZKClientService.class);
-    zkClient.startAndWait();
+    zkClient.startAsync().awaitRunning();
 
     try {
       TransactionServiceClient client = injector.getInstance(TransactionServiceClient.class);
@@ -128,7 +128,7 @@ public class TransactionServiceClient implements TransactionSystemClient {
         LOG.info("Aborted tx...");
       }
     } finally {
-      zkClient.stopAndWait();
+      zkClient.stopAsync().awaitTerminated();
     }
   }
 

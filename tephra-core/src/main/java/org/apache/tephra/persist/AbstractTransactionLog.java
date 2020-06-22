@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
 
@@ -61,7 +62,7 @@ public abstract class AbstractTransactionLog implements TransactionLog {
 
   private int countSinceLastSync = 0;
   private long positionBeforeWrite = -1L;
-  private final Stopwatch stopWatch = new Stopwatch();
+  private final Stopwatch stopWatch = Stopwatch.createUnstarted();
 
   private final long slowAppendThreshold;
 
@@ -176,7 +177,7 @@ public abstract class AbstractTransactionLog implements TransactionLog {
     // this method is only called by a thread if it actually called sync(), inside a sync block
     if (positionBeforeWrite != -1L) { // actually it should never be -1, but just in case
       stopWatch.stop();
-      long elapsed = stopWatch.elapsedMillis();
+      long elapsed = stopWatch.elapsed(TimeUnit.MILLISECONDS);
       long bytesWritten = writer.getPosition() - positionBeforeWrite;
       if (elapsed >= slowAppendThreshold) {
         LOG.info("Slow append to log {}, took {} ms for {} entr{} and {} bytes.",

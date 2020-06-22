@@ -20,6 +20,7 @@ package org.apache.tephra;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
@@ -240,9 +241,9 @@ public class TransactionManager extends AbstractService {
   @Override
   public synchronized void doStart() {
     LOG.info("Starting transaction manager.");
-    txMetricsCollector.start();
+    txMetricsCollector.startAsync();
     // start up the persistor
-    persistor.startAndWait();
+    persistor.startAsync().awaitRunning();
     try {
       persistor.setupStorage();
     } catch (IOException e) {
@@ -694,7 +695,7 @@ public class TransactionManager extends AbstractService {
 
   @Override
   public void doStop() {
-    Stopwatch timer = new Stopwatch().start();
+    Stopwatch timer = Stopwatch.createStarted();
     LOG.info("Shutting down gracefully...");
     // signal the cleanup thread to stop
     if (cleanupThread != null) {
@@ -726,8 +727,8 @@ public class TransactionManager extends AbstractService {
       }
     }
 
-    persistor.stopAndWait();
-    txMetricsCollector.stop();
+    persistor.stopAsync().awaitTerminated();
+    txMetricsCollector.stopAsync();
     timer.stop();
     LOG.info("Took " + timer + " to stop");
     notifyStopped();
@@ -784,10 +785,10 @@ public class TransactionManager extends AbstractService {
     Preconditions.checkArgument(timeoutInSeconds <= maxTimeout,
                                 "timeout must not exceed %s seconds but is %s seconds", maxTimeout, timeoutInSeconds);
     txMetricsCollector.rate("start.short");
-    Stopwatch timer = new Stopwatch().start();
+    Stopwatch timer = Stopwatch.createStarted();
     long expiration = getTxExpiration(timeoutInSeconds);
     Transaction tx = startTx(expiration, TransactionType.SHORT, clientId);
-    txMetricsCollector.histogram("start.short.latency", (int) timer.elapsedMillis());
+    txMetricsCollector.histogram("start.short.latency", (int) timer.elapsed(TimeUnit.MILLISECONDS));
     return tx;
   }
   
@@ -820,10 +821,10 @@ public class TransactionManager extends AbstractService {
   public Transaction startLong(String clientId) {
     Preconditions.checkArgument(clientId != null, "clientId must not be null");
     txMetricsCollector.rate("start.long");
-    Stopwatch timer = new Stopwatch().start();
+    Stopwatch timer = Stopwatch.createStarted();
     long expiration = getTxExpiration(defaultLongTimeout);
     Transaction tx = startTx(expiration, TransactionType.LONG, clientId);
-    txMetricsCollector.histogram("start.long.latency", (int) timer.elapsedMillis());
+    txMetricsCollector.histogram("start.long.latency", (int) timer.elapsed(TimeUnit.MILLISECONDS));
     return tx;
   }
 
@@ -871,7 +872,7 @@ public class TransactionManager extends AbstractService {
     throws TransactionNotInProgressException, TransactionSizeException, TransactionConflictException {
 
     txMetricsCollector.rate("canCommit");
-    Stopwatch timer = new Stopwatch().start();
+    Stopwatch timer = Stopwatch.createStarted();
     InProgressTx inProgressTx = inProgress.get(txId);
     if (inProgressTx == null) {
       synchronized (this) {
@@ -902,7 +903,7 @@ public class TransactionManager extends AbstractService {
     } finally {
       this.logReadLock.unlock();
     }
-    txMetricsCollector.histogram("canCommit.latency", (int) timer.elapsedMillis());
+    txMetricsCollector.histogram("canCommit.latency", (int) timer.elapsed(TimeUnit.MILLISECONDS));
   }
 
   /**
@@ -958,7 +959,7 @@ public class TransactionManager extends AbstractService {
     throws TransactionNotInProgressException, TransactionConflictException {
 
     txMetricsCollector.rate("commit");
-    Stopwatch timer = new Stopwatch().start();
+    Stopwatch timer = Stopwatch.createStarted();
     ChangeSet changeSet;
     boolean addToCommitted = true;
     long commitPointer;
@@ -1001,7 +1002,7 @@ public class TransactionManager extends AbstractService {
     } finally {
       this.logReadLock.unlock();
     }
-    txMetricsCollector.histogram("commit.latency", (int) timer.elapsedMillis());
+    txMetricsCollector.histogram("commit.latency", (int) timer.elapsed(TimeUnit.MILLISECONDS));
   }
 
   private void doCommit(long transactionId, long writePointer, ChangeSet changes, long commitPointer,
@@ -1050,7 +1051,7 @@ public class TransactionManager extends AbstractService {
   public void abort(Transaction tx) {
     // guard against changes to the transaction log while processing
     txMetricsCollector.rate("abort");
-    Stopwatch timer = new Stopwatch().start();
+    Stopwatch timer = Stopwatch.createStarted();
     this.logReadLock.lock();
     try {
       synchronized (this) {
@@ -1058,7 +1059,7 @@ public class TransactionManager extends AbstractService {
         doAbort(tx.getTransactionId(), tx.getCheckpointWritePointers(), tx.getType());
       }
       appendToLog(TransactionEdit.createAborted(tx.getTransactionId(), tx.getType(), tx.getCheckpointWritePointers()));
-      txMetricsCollector.histogram("abort.latency", (int) timer.elapsedMillis());
+      txMetricsCollector.histogram("abort.latency", (int) timer.elapsed(TimeUnit.MILLISECONDS));
     } finally {
       this.logReadLock.unlock();
     }
@@ -1105,7 +1106,7 @@ public class TransactionManager extends AbstractService {
   public boolean invalidate(long tx) {
     // guard against changes to the transaction log while processing
     txMetricsCollector.rate("invalidate");
-    Stopwatch timer = new Stopwatch().start();
+    Stopwatch timer = Stopwatch.createStarted();
     this.logReadLock.lock();
     try {
       boolean success;
@@ -1114,7 +1115,7 @@ public class TransactionManager extends AbstractService {
         success = doInvalidate(tx);
       }
       appendToLog(TransactionEdit.createInvalid(tx));
-      txMetricsCollector.histogram("invalidate.latency", (int) timer.elapsedMillis());
+      txMetricsCollector.histogram("invalidate.latency", (int) timer.elapsed(TimeUnit.MILLISECONDS));
       return success;
     } finally {
       this.logReadLock.unlock();
@@ -1163,7 +1164,7 @@ public class TransactionManager extends AbstractService {
   public boolean truncateInvalidTx(Set<Long> invalidTxIds) {
     // guard against changes to the transaction log while processing
     txMetricsCollector.rate("truncateInvalidTx");
-    Stopwatch timer = new Stopwatch().start();
+    Stopwatch timer = Stopwatch.createStarted();
     this.logReadLock.lock();
     try {
       boolean success;
@@ -1172,7 +1173,7 @@ public class TransactionManager extends AbstractService {
         success = doTruncateInvalidTx(invalidTxIds);
       }
       appendToLog(TransactionEdit.createTruncateInvalidTx(invalidTxIds));
-      txMetricsCollector.histogram("truncateInvalidTx.latency", (int) timer.elapsedMillis());
+      txMetricsCollector.histogram("truncateInvalidTx.latency", (int) timer.elapsed(TimeUnit.MILLISECONDS));
       return success;
     } finally {
       this.logReadLock.unlock();
@@ -1193,7 +1194,7 @@ public class TransactionManager extends AbstractService {
   public boolean truncateInvalidTxBefore(long time) throws InvalidTruncateTimeException {
     // guard against changes to the transaction log while processing
     txMetricsCollector.rate("truncateInvalidTxBefore");
-    Stopwatch timer = new Stopwatch().start();
+    Stopwatch timer = Stopwatch.createStarted();
     this.logReadLock.lock();
     try {
       boolean success;
@@ -1202,7 +1203,7 @@ public class TransactionManager extends AbstractService {
         success = doTruncateInvalidTxBefore(time);
       }
       appendToLog(TransactionEdit.createTruncateInvalidTxBefore(time));
-      txMetricsCollector.histogram("truncateInvalidTxBefore.latency", (int) timer.elapsedMillis());
+      txMetricsCollector.histogram("truncateInvalidTxBefore.latency", (int) timer.elapsed(TimeUnit.MILLISECONDS));
       return success;
     } finally {
       this.logReadLock.unlock();
@@ -1232,7 +1233,7 @@ public class TransactionManager extends AbstractService {
 
   public Transaction checkpoint(Transaction originalTx) throws TransactionNotInProgressException {
     txMetricsCollector.rate("checkpoint");
-    Stopwatch timer = new Stopwatch().start();
+    Stopwatch timer = Stopwatch.createStarted();
 
     Transaction checkpointedTx;
     long txId = originalTx.getTransactionId();
@@ -1266,7 +1267,7 @@ public class TransactionManager extends AbstractService {
     } finally {
       this.logReadLock.unlock();
     }
-    txMetricsCollector.histogram("checkpoint.latency", (int) timer.elapsedMillis());
+    txMetricsCollector.histogram("checkpoint.latency", (int) timer.elapsed(TimeUnit.MILLISECONDS));
 
     return checkpointedTx;
   }
@@ -1366,10 +1367,10 @@ public class TransactionManager extends AbstractService {
 
   private void appendToLog(TransactionEdit edit) {
     try {
-      Stopwatch timer = new Stopwatch().start();
+      Stopwatch timer = Stopwatch.createStarted();
       currentLog.append(edit);
       txMetricsCollector.rate("wal.append.count");
-      txMetricsCollector.histogram("wal.append.latency", (int) timer.elapsedMillis());
+      txMetricsCollector.histogram("wal.append.latency", (int) timer.elapsed(TimeUnit.MILLISECONDS));
     } catch (IOException ioe) {
       abortService("Error appending to transaction log", ioe);
     }
@@ -1377,10 +1378,10 @@ public class TransactionManager extends AbstractService {
 
   private void appendToLog(List<TransactionEdit> edits) {
     try {
-      Stopwatch timer = new Stopwatch().start();
+      Stopwatch timer = Stopwatch.createStarted();
       currentLog.append(edits);
       txMetricsCollector.rate("wal.append.count", edits.size());
-      txMetricsCollector.histogram("wal.append.latency", (int) timer.elapsedMillis());
+      txMetricsCollector.histogram("wal.append.latency", (int) timer.elapsed(TimeUnit.MILLISECONDS));
     } catch (IOException ioe) {
       abortService("Error appending to transaction log", ioe);
     }
@@ -1587,7 +1588,7 @@ public class TransactionManager extends AbstractService {
 
     @Override
     public String toString() {
-      return Objects.toStringHelper(this)
+      return MoreObjects.toStringHelper(this)
           .add("visibilityUpperBound", visibilityUpperBound)
           .add("expiration", expiration)
           .add("type", type)

@@ -185,13 +185,13 @@ public class TransactionAwareHTableTest extends AbstractHBaseTableTest {
     conn = testUtil.getConnection();
     txStateStorage = new HDFSTransactionStateStorage(conf, new SnapshotCodecProvider(conf), new TxMetricsCollector());
     txManager = new TransactionManager(conf, txStateStorage, new TxMetricsCollector());
-    txManager.startAndWait();
+    txManager.startAsync().awaitRunning();
   }
 
   @AfterClass
   public static void shutdownAfterClass() throws Exception {
     if (txManager != null) {
-      txManager.stopAndWait();
+      txManager.stopAsync().awaitTerminated();
     }
     if (conn != null) {
       conn.close();

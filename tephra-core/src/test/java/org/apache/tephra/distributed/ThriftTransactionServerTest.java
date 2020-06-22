@@ -86,7 +86,7 @@ public class ThriftTransactionServerTest {
   @Before
   public void start() throws Exception {
     zkServer = InMemoryZKServer.builder().setDataDir(tmpFolder.newFolder()).build();
-    zkServer.startAndWait();
+    zkServer.startAsync().awaitRunning();
 
     Configuration conf = new Configuration();
     conf.setBoolean(TxConstants.Manager.CFG_DO_PERSIST, false);
@@ -116,14 +116,14 @@ public class ThriftTransactionServerTest {
     );
 
     zkClientService = injector.getInstance(ZKClientService.class);
-    zkClientService.startAndWait();
+    zkClientService.startAsync().awaitRunning();
 
     // start a tx server
     txService = injector.getInstance(TransactionService.class);
     storage = injector.getInstance(TransactionStateStorage.class);
     try {
       LOG.info("Starting transaction service");
-      txService.startAndWait();
+      txService.startAsync().awaitRunning();
     } catch (Exception e) {
       LOG.error("Failed to start service: ", e);
       throw e;
@@ -139,10 +139,10 @@ public class ThriftTransactionServerTest {
 
   @After
   public void stop() throws Exception {
-    txService.stopAndWait();
-    storage.stopAndWait();
-    zkClientService.stopAndWait();
-    zkServer.stopAndWait();
+    txService.stopAsync().awaitTerminated();
+    storage.stopAsync().awaitTerminated();
+    zkClientService.stopAsync().awaitTerminated();
+    zkServer.stopAsync().awaitTerminated();
   }
 
   public TransactionSystemClient getClient() throws Exception {
@@ -180,7 +180,7 @@ public class ThriftTransactionServerTest {
     waitForThriftStop();
 
     // Stop Zookeeper client so that it does not re-connect to Zookeeper and start Thrift server again.
-    zkClientService.stopAndWait();
+    zkClientService.stopAsync().awaitTerminated();
     storageWaitLatch.countDown();
     TimeUnit.SECONDS.sleep(1);
 

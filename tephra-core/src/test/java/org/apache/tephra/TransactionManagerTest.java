@@ -64,12 +64,12 @@ public class TransactionManagerTest extends TransactionSystemTest {
     txStateStorage = new InMemoryTransactionStateStorage();
     txManager = new TransactionManager
       (conf, txStateStorage, new TxMetricsCollector());
-    txManager.startAndWait();
+    txManager.startAsync().awaitRunning();
   }
 
   @AfterClass
   public static void afterClass() {
-    txManager.stopAndWait();
+    txManager.stopAsync().awaitTerminated();
   }
 
   @After
@@ -171,7 +171,7 @@ public class TransactionManagerTest extends TransactionSystemTest {
     // using a new tx manager that cleans up
     TransactionManager txm = new TransactionManager
       (config, new InMemoryTransactionStateStorage(), new TxMetricsCollector());
-    txm.startAndWait();
+    txm.startAsync().awaitRunning();
     try {
       Assert.assertEquals(0, txm.getInvalidSize());
       Assert.assertEquals(0, txm.getCommittedSize());
@@ -252,7 +252,7 @@ public class TransactionManagerTest extends TransactionSystemTest {
       Assert.assertEquals(ltx2.getTransactionId(), (long) txm.getCurrentState().getInvalid().iterator().next());
       Assert.assertEquals(1, txm.getExcludedListSize());
     } finally {
-      txm.stopAndWait();
+      txm.stopAsync().awaitTerminated();
     }
   }
 
@@ -264,7 +264,7 @@ public class TransactionManagerTest extends TransactionSystemTest {
     // using a new tx manager that cleans up
     TransactionManager txm = new TransactionManager
       (config, new InMemoryTransactionStateStorage(), new TxMetricsCollector());
-    txm.startAndWait();
+    txm.startAsync().awaitRunning();
     try {
       Assert.assertEquals(0, txm.getInvalidSize());
       Assert.assertEquals(0, txm.getCommittedSize());
@@ -294,7 +294,7 @@ public class TransactionManagerTest extends TransactionSystemTest {
       // abort should not remove long running transaction from invalid list
       Assert.assertEquals(1, txm.getInvalidSize());
     } finally {
-      txm.stopAndWait();
+      txm.stopAsync().awaitTerminated();
     }
   }
   
@@ -305,7 +305,7 @@ public class TransactionManagerTest extends TransactionSystemTest {
     // No snapshots
     testConf.setLong(TxConstants.Manager.CFG_TX_SNAPSHOT_INTERVAL, -1);
     TransactionManager txm1 = new TransactionManager(testConf, storage, new TxMetricsCollector());
-    txm1.startAndWait();
+    txm1.startAsync().awaitRunning();
 
     TransactionManager txm2 = null;
     Transaction tx1;
@@ -360,15 +360,15 @@ public class TransactionManagerTest extends TransactionSystemTest {
       // Start another transaction manager without stopping txm1 so that snapshot does not get written,
       // and all logs can be replayed.
       txm2 = new TransactionManager(testConf, storage, new TxMetricsCollector());
-      txm2.startAndWait();
+      txm2.startAsync().awaitRunning();
       Assert.assertEquals(ImmutableList.of(tx2.getTransactionId(), tx5.getTransactionId()),
                           txm2.getCurrentState().getInvalid());
       Assert.assertEquals(ImmutableSet.of(tx3.getTransactionId(), tx4.getTransactionId()),
                           txm2.getCurrentState().getInProgress().keySet());
     } finally {
-      txm1.stopAndWait();
+      txm1.stopAsync().awaitTerminated();
       if (txm2 != null) {
-        txm2.stopAndWait();
+        txm2.stopAsync().awaitTerminated();
       }
     }
   }
@@ -380,7 +380,7 @@ public class TransactionManagerTest extends TransactionSystemTest {
     // No snapshots
     testConf.setLong(TxConstants.Manager.CFG_TX_SNAPSHOT_INTERVAL, -1);
     TransactionManager txm1 = new TransactionManager(testConf, storage, new TxMetricsCollector());
-    txm1.startAndWait();
+    txm1.startAsync().awaitRunning();
 
     TransactionManager txm2 = null;
     Transaction tx1;
@@ -446,15 +446,15 @@ public class TransactionManagerTest extends TransactionSystemTest {
       // Start another transaction manager without stopping txm1 so that snapshot does not get written, 
       // and all logs can be replayed.
       txm2 = new TransactionManager(testConf, storage, new TxMetricsCollector());
-      txm2.startAndWait();
+      txm2.startAsync().awaitRunning();
       Assert.assertEquals(ImmutableList.of(tx5.getTransactionId(), tx6.getTransactionId()),
                           txm2.getCurrentState().getInvalid());
       Assert.assertEquals(ImmutableSet.of(tx3.getTransactionId(), tx4.getTransactionId()),
                           txm2.getCurrentState().getInProgress().keySet());
     } finally {
-      txm1.stopAndWait();
+      txm1.stopAsync().awaitTerminated();
       if (txm2 != null) {
-        txm2.stopAndWait();
+        txm2.stopAsync().awaitTerminated();
       }
     }
   }

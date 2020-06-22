@@ -63,7 +63,7 @@ public class PooledClientProviderTest {
   public void testClientConnectionPoolMaximumNumberOfClients() throws Exception {
     // We need a server for the client to connect to
     InMemoryZKServer zkServer = InMemoryZKServer.builder().setDataDir(tmpFolder.newFolder()).build();
-    zkServer.startAndWait();
+    zkServer.startAsync().awaitRunning();
 
     try {
       Configuration conf = new Configuration();
@@ -97,7 +97,7 @@ public class PooledClientProviderTest {
         t.join();
       }
     } finally {
-      zkServer.stopAndWait();
+      zkServer.stopAsync().awaitTerminated();
     }
   }
 
@@ -111,7 +111,7 @@ public class PooledClientProviderTest {
     );
 
     ZKClientService zkClient = injector.getInstance(ZKClientService.class);
-    zkClient.startAndWait();
+    zkClient.startAsync().awaitRunning();
 
     final PooledClientProvider clientProvider = new PooledClientProvider(conf,
       injector.getInstance(DiscoveryServiceClient.class));

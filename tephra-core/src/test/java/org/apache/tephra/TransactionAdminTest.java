@@ -64,7 +64,7 @@ public class TransactionAdminTest {
   @BeforeClass
   public static void start() throws Exception {
     zkServer = InMemoryZKServer.builder().setDataDir(tmpFolder.newFolder()).build();
-    zkServer.startAndWait();
+    zkServer.startAsync().awaitRunning();
 
     conf = new Configuration();
     conf.setBoolean(TxConstants.Manager.CFG_DO_PERSIST, false);
@@ -87,14 +87,14 @@ public class TransactionAdminTest {
     );
 
     zkClientService = injector.getInstance(ZKClientService.class);
-    zkClientService.startAndWait();
+    zkClientService.startAsync().awaitRunning();
 
     // start a tx server
     txService = injector.getInstance(TransactionService.class);
     txClient = injector.getInstance(TransactionSystemClient.class);
     try {
       LOG.info("Starting transaction service");
-      txService.startAndWait();
+      txService.startAsync().awaitRunning();
     } catch (Exception e) {
       LOG.error("Failed to start service: ", e);
       throw e;
@@ -110,9 +110,9 @@ public class TransactionAdminTest {
 
   @AfterClass
   public static void stop() throws Exception {
-    txService.stopAndWait();
-    zkClientService.stopAndWait();
-    zkServer.stopAndWait();
+    txService.stopAsync().awaitTerminated();
+    zkClientService.stopAsync().awaitTerminated();
+    zkServer.stopAsync().awaitTerminated();
   }
 
   @Test

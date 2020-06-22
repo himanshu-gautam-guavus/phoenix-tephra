@@ -40,7 +40,7 @@ public class TransactionServiceMainTest {
   public void testClientServer() throws Exception {
     // Simply start a transaction server and connect to it with the client.
     InMemoryZKServer zkServer = InMemoryZKServer.builder().setDataDir(tmpFolder.newFolder()).build();
-    zkServer.startAndWait();
+    zkServer.startAsync().awaitRunning();
 
     try {
       Configuration conf = new Configuration();
@@ -71,7 +71,7 @@ public class TransactionServiceMainTest {
         t.join();
       }
     } finally {
-      zkServer.stopAndWait();
+      zkServer.stopAsync().awaitTerminated();
     }
   }
 }

@@ -141,9 +141,9 @@ public class TransactionProcessorTest {
                                                 txSnapshot.getInProgress());
     HDFSTransactionStateStorage tmpStorage =
       new HDFSTransactionStateStorage(conf, new SnapshotCodecProvider(conf), new TxMetricsCollector());
-    tmpStorage.startAndWait();
+    tmpStorage.startAsync().awaitRunning();
     tmpStorage.writeSnapshot(txSnapshot);
-    tmpStorage.stopAndWait();
+    tmpStorage.stopAsync().awaitTerminated();
   }
 
   @AfterClass
@@ -601,12 +601,12 @@ public class TransactionProcessorTest {
   public void testTransactionStateCache() throws Exception {
     TransactionStateCache cache = new TransactionStateCache();
     cache.setConf(conf);
-    cache.startAndWait();
+    cache.startAsync().awaitRunning();
     // verify that the transaction snapshot read matches what we wrote in setupBeforeClass()
     TransactionVisibilityState cachedSnapshot = waitForTransactionState(cache);
     assertNotNull(cachedSnapshot);
     assertEquals(invalidSet, cachedSnapshot.getInvalid());
-    cache.stopAndWait();
+    cache.stopAsync().awaitTerminated();
   }
 
   private TransactionVisibilityState waitForTransactionState(TransactionStateCache cache) throws InterruptedException {

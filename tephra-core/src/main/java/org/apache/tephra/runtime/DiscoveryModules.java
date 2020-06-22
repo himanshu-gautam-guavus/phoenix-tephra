@@ -85,7 +85,7 @@ public final class DiscoveryModules {
         @Override
         public Cancellable register(Discoverable discoverable) {
           if (!zkClient.isRunning()) {
-            zkClient.startAndWait();
+            zkClient.startAsync().awaitRunning();
           }
           return delegate.register(discoverable);
         }
@@ -100,7 +100,7 @@ public final class DiscoveryModules {
         @Override
         public ServiceDiscovered discover(String s) {
           if (!zkClient.isRunning()) {
-            zkClient.startAndWait();
+            zkClient.startAsync().awaitRunning();
           }
           return delegate.discover(s);
         }

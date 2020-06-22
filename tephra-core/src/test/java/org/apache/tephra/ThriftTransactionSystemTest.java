@@ -72,7 +72,7 @@ public class ThriftTransactionSystemTest extends TransactionSystemTest {
   @BeforeClass
   public static void start() throws Exception {
     zkServer = InMemoryZKServer.builder().setDataDir(tmpFolder.newFolder()).build();
-    zkServer.startAndWait();
+    zkServer.startAsync().awaitRunning();
 
     Configuration conf = getCommonConfiguration(null);
     conf.setBoolean(TxConstants.Manager.CFG_DO_PERSIST, false);
@@ -99,7 +99,7 @@ public class ThriftTransactionSystemTest extends TransactionSystemTest {
     );
 
     zkClientService = injector.getInstance(ZKClientService.class);
-    zkClientService.startAndWait();
+    zkClientService.startAsync().awaitRunning();
 
     // start a tx server
     txService = injector.getInstance(TransactionService.class);
@@ -107,8 +107,8 @@ public class ThriftTransactionSystemTest extends TransactionSystemTest {
     txClient = injector.getInstance(TransactionSystemClient.class);
     try {
       LOG.info("Starting transaction service");
-      storage.startAndWait();
-      txService.startAndWait();
+      storage.startAsync().awaitRunning();
+      txService.startAsync().awaitRunning();
     } catch (Exception e) {
       LOG.error("Failed to start service: ", e);
       throw e;
@@ -124,10 +124,10 @@ public class ThriftTransactionSystemTest extends TransactionSystemTest {
   
   @AfterClass
   public static void stop() throws Exception {
-    txService.stopAndWait();
-    storage.stopAndWait();
-    zkClientService.stopAndWait();
-    zkServer.stopAndWait();
+    txService.stopAsync().awaitTerminated();
+    storage.stopAsync().awaitTerminated();
+    zkClientService.stopAsync().awaitTerminated();
+    zkServer.stopAsync().awaitTerminated();
   }
   
   @Override

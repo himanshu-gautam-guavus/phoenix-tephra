@@ -70,14 +70,14 @@ public abstract class AbstractTransactionStateStorageTest {
     TransactionSnapshot snapshot = createRandomSnapshot();
     TransactionStateStorage storage = getStorage(conf);
     try {
-      storage.startAndWait();
+      storage.startAsync().awaitRunning();
       storage.writeSnapshot(snapshot);
 
       TransactionSnapshot readSnapshot = storage.getLatestSnapshot();
       assertNotNull(readSnapshot);
       assertEquals(snapshot, readSnapshot);
     } finally {
-      storage.stopAndWait();
+      storage.stopAsync().awaitTerminated();
     }
   }
 
@@ -90,7 +90,7 @@ public abstract class AbstractTransactionStateStorageTest {
     TransactionStateStorage storage = getStorage(conf);
     try {
       long now = System.currentTimeMillis();
-      storage.startAndWait();
+      storage.startAsync().awaitRunning();
       TransactionLog log = storage.createLog(now);
       for (TransactionEdit edit : edits) {
         log.append(edit);
@@ -116,7 +116,7 @@ public abstract class AbstractTransactionStateStorageTest {
         assertEquals(edits.get(i), readEdits.get(i));
       }
     } finally {
-      storage.stopAndWait();
+      storage.stopAsync().awaitTerminated();
     }
   }
 
@@ -133,7 +133,7 @@ public abstract class AbstractTransactionStateStorageTest {
     try {
       storage = getStorage(conf);
       TransactionManager txManager = new TransactionManager(conf, storage, new TxMetricsCollector());
-      txManager.startAndWait();
+      txManager.startAsync().awaitRunning();
 
       // TODO: replace with new persistence tests
       final byte[] a = { 'a' };
@@ -151,7 +151,7 @@ public abstract class AbstractTransactionStateStorageTest {
       // start a tx3
       Transaction tx3 = txManager.startShort("client3");
       // restart
-      txManager.stopAndWait();
+      txManager.stopAsync().awaitTerminated();
       TransactionSnapshot origState = txManager.getCurrentState();
       LOG.info("Orig state: " + origState);
 
@@ -159,7 +159,7 @@ public abstract class AbstractTransactionStateStorageTest {
       // starts a new tx manager
       storage2 = getStorage(conf);
       txManager = new TransactionManager(conf, storage2, new TxMetricsCollector());
-      txManager.startAndWait();
+      txManager.startAsync().awaitRunning();
 
       // check that the reloaded state matches the old
       TransactionSnapshot newState = txManager.getCurrentState();
@@ -214,7 +214,7 @@ public abstract class AbstractTransactionStateStorageTest {
       // simulate crash by starting a new tx manager without a stopAndWait
       storage3 = getStorage(conf);
       txManager = new TransactionManager(conf, storage3, new TxMetricsCollector());
-      txManager.startAndWait();
+      txManager.startAsync().awaitRunning();
 
       // verify state again matches (this time should include WAL replay)
       newState = txManager.getCurrentState();
@@ -225,13 +225,13 @@ public abstract class AbstractTransactionStateStorageTest {
       Assert.assertTrue(txAfter.getTransactionId() > tx.getTransactionId());
     } finally {
       if (storage != null) {
-        storage.stopAndWait();
+        storage.stopAsync().awaitTerminated();
       }
       if (storage2 != null) {
-        storage2.stopAndWait();
+        storage2.stopAsync().awaitTerminated();
       }
       if (storage3 != null) {
-        storage3.stopAndWait();
+        storage3.stopAsync().awaitTerminated();
       }
     }
   }
@@ -251,7 +251,7 @@ public abstract class AbstractTransactionStateStorageTest {
       storage1 = getStorage(conf);
       TransactionManager txManager = new TransactionManager
         (conf, storage1, new TxMetricsCollector());
-      txManager.startAndWait();
+      txManager.startAsync().awaitRunning();
 
       // TODO: replace with new persistence tests
       final byte[] a = { 'a' };
@@ -271,7 +271,7 @@ public abstract class AbstractTransactionStateStorageTest {
       // simulate a failure by starting a new tx manager without stopping first
       storage2 = getStorage(conf);
       txManager = new TransactionManager(conf, storage2, new TxMetricsCollector());
-      txManager.startAndWait();
+      txManager.startAsync().awaitRunning();
 
       // check that the reloaded state matches the old
       TransactionSnapshot newState = txManager.getCurrentState();
@@ -280,10 +280,10 @@ public abstract class AbstractTransactionStateStorageTest {
 
     } finally {
       if (storage1 != null) {
-        storage1.stopAndWait();
+        storage1.stopAsync().awaitTerminated();
       }
       if (storage2 != null) {
-        storage2.stopAndWait();
+        storage2.stopAsync().awaitTerminated();
       }
     }
   }
@@ -297,7 +297,7 @@ public abstract class AbstractTransactionStateStorageTest {
     TransactionStateStorage storage = null;
     try {
       storage = getStorage(conf);
-      storage.startAndWait();
+      storage.startAsync().awaitRunning();
       long now = System.currentTimeMillis();
       long writePointer = 1;
       Collection<Long> invalid = Lists.newArrayList();
@@ -368,7 +368,7 @@ public abstract class AbstractTransactionStateStorageTest {
       assertEquals(3, allLogs.size());
     } finally {
       if (storage != null) {
-        storage.stopAndWait();
+        storage.stopAsync().awaitTerminated();
       }
     }
   }
@@ -379,7 +379,7 @@ public abstract class AbstractTransactionStateStorageTest {
     TransactionStateStorage storage = null;
     try {
       storage = getStorage(conf);
-      storage.startAndWait();
+      storage.startAsync().awaitRunning();
 
       // Create long running txns. Abort one of them, invalidate another, invalidate and abort the last.
       long time1 = System.currentTimeMillis();
@@ -411,7 +411,7 @@ public abstract class AbstractTransactionStateStorageTest {
 
       // Start transaction manager
       TransactionManager txm = new TransactionManager(conf, storage, new TxMetricsCollector());
-      txm.startAndWait();
+      txm.startAsync().awaitRunning();
       try {
         // Verify that all txns are in invalid list.
         TransactionSnapshot snapshot1 = txm.getCurrentState();
@@ -420,11 +420,11 @@ public abstract class AbstractTransactionStateStorageTest {
         assertEquals(0, snapshot1.getCommittedChangeSets().size());
         assertEquals(0, snapshot1.getCommittedChangeSets().size());
       } finally {
-        txm.stopAndWait();
+        txm.stopAsync().awaitTerminated();
       }
     } finally {
       if (storage != null) {
-        storage.stopAndWait();
+        storage.stopAsync().awaitTerminated();
       }
     }
   }
@@ -435,7 +435,7 @@ public abstract class AbstractTransactionStateStorageTest {
     TransactionStateStorage storage = null;
     try {
       storage = getStorage(conf);
-      storage.startAndWait();
+      storage.startAsync().awaitRunning();
 
       // Create some txns, and invalidate all of them.
       long time1 = System.currentTimeMillis();
@@ -479,7 +479,7 @@ public abstract class AbstractTransactionStateStorageTest {
 
       // Start transaction manager
       TransactionManager txm = new TransactionManager(conf, storage, new TxMetricsCollector());
-      txm.startAndWait();
+      txm.startAsync().awaitRunning();
       try {
         // Only wp4 should be in invalid list.
         TransactionSnapshot snapshot = txm.getCurrentState();
@@ -488,11 +488,11 @@ public abstract class AbstractTransactionStateStorageTest {
         assertEquals(0, snapshot.getCommittedChangeSets().size());
         assertEquals(0, snapshot.getCommittedChangeSets().size());
       } finally {
-        txm.stopAndWait();
+        txm.stopAsync().awaitTerminated();
       }
     } finally {
       if (storage != null) {
-        storage.stopAndWait();
+        storage.stopAsync().awaitTerminated();
       }
     }
   }

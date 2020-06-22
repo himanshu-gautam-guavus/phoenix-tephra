@@ -415,7 +415,7 @@ public class HDFSTransactionStateStorage extends AbstractTransactionStateStorage
     // to report
     HDFSTransactionStateStorage storage =
       new HDFSTransactionStateStorage(config, new SnapshotCodecProvider(config), new TxMetricsCollector());
-    storage.startAndWait();
+    storage.startAsync().awaitRunning();
     try {
       switch (mode) {
         case SNAPSHOT:
@@ -449,7 +449,7 @@ public class HDFSTransactionStateStorage extends AbstractTransactionStateStorage
           break;
       }
     } finally {
-      storage.stop();
+      storage.stopAsync();
     }
   }
 

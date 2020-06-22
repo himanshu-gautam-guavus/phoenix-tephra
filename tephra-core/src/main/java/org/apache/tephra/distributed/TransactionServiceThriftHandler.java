@@ -246,11 +246,11 @@ public class TransactionServiceThriftHandler implements TTransactionServer.Iface
 
   @Override
   public void init() throws Exception {
-    txManager.startAndWait();
+    txManager.startAsync().awaitRunning();
   }
 
   @Override
   public void destroy() throws Exception {
-    txManager.stopAndWait();
+    txManager.stopAsync().awaitTerminated();
   }
 }

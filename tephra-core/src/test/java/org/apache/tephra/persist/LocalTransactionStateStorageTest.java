@@ -97,7 +97,7 @@ public class LocalTransactionStateStorageTest extends AbstractTransactionStateSt
     TransactionStateStorage storage = null;
     try {
       storage = getStorage(conf);
-      storage.startAndWait();
+      storage.startAsync().awaitRunning();
 
       // Create transaction snapshot and transaction edits with version when long running txns had -1 expiration.
       Collection<Long> invalid = Lists.newArrayList();
@@ -133,7 +133,7 @@ public class LocalTransactionStateStorageTest extends AbstractTransactionStateSt
       long longTimeout = TimeUnit.SECONDS.toMillis(conf.getLong(TxConstants.Manager.CFG_TX_LONG_TIMEOUT,
                                                                 TxConstants.Manager.DEFAULT_TX_LONG_TIMEOUT));
       TransactionManager txm = new TransactionManager(conf, storage, new TxMetricsCollector());
-      txm.startAndWait();
+      txm.startAsync().awaitRunning();
       try {
         // Verify that the txns in old format were read correctly.
         // There should be four in-progress transactions, and no invalid transactions
@@ -145,11 +145,11 @@ public class LocalTransactionStateStorageTest extends AbstractTransactionStateSt
         verifyInProgress(snapshot1.getInProgress().get(wp4), InProgressType.SHORT, time4 + 1000);
         Assert.assertEquals(0, snapshot1.getInvalid().size());
       } finally {
-        txm.stopAndWait();
+        txm.stopAsync().awaitTerminated();
       }
     } finally {
       if (storage != null) {
-        storage.stopAndWait();
+        storage.stopAsync().awaitTerminated();
       }
     }
   }
@@ -165,7 +165,7 @@ public class LocalTransactionStateStorageTest extends AbstractTransactionStateSt
     TransactionStateStorage storage = null;
     try {
       storage = getStorage(conf);
-      storage.startAndWait();
+      storage.startAsync().awaitRunning();
 
       // Create edits for transaction type addition to abort
       long time1 = System.currentTimeMillis();
@@ -194,7 +194,7 @@ public class LocalTransactionStateStorageTest extends AbstractTransactionStateSt
 
       // Start transaction manager
       TransactionManager txm = new TransactionManager(conf, storage, new TxMetricsCollector());
-      txm.startAndWait();
+      txm.startAsync().awaitRunning();
       try {
         // Verify that the txns in old format were read correctly.
         // Both transactions should be in invalid state
@@ -204,11 +204,11 @@ public class LocalTransactionStateStorageTest extends AbstractTransactionStateSt
         Assert.assertEquals(0, snapshot1.getCommittedChangeSets().size());
         Assert.assertEquals(0, snapshot1.getCommittingChangeSets().size());
       } finally {
-        txm.stopAndWait();
+        txm.stopAsync().awaitTerminated();
       }
     } finally {
       if (storage != null) {
-        storage.stopAndWait();
+        storage.stopAsync().awaitTerminated();
       }
     }
   }

@@ -46,11 +46,11 @@ public abstract class AbstractTransactionVisibilityFilterTest {
     Configuration conf = new ConfigurationFactory().get();
     conf.unset(TxConstants.Persist.CFG_TX_SNAPHOT_CODEC_CLASSES);
     txManager = new TransactionManager(conf);
-    txManager.startAndWait();
+    txManager.startAsync().awaitRunning();
   }
 
   @After
   public void tearDown() throws Exception {
-    txManager.stopAndWait();
+    txManager.stopAsync().awaitTerminated();
   }
 }

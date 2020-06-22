@@ -75,7 +75,7 @@ public class TransactionAdmin {
     );
 
     ZKClientService zkClient = injector.getInstance(ZKClientService.class);
-    zkClient.startAndWait();
+    zkClient.startAsync().awaitRunning();
     
     try {
       TransactionSystemClient txClient = injector.getInstance(TransactionSystemClient.class);
@@ -126,7 +126,7 @@ public class TransactionAdmin {
         return 1;
       }
     } finally {
-      zkClient.stopAndWait();
+      zkClient.stopAsync().awaitTerminated();
     }
     return 0;
   }

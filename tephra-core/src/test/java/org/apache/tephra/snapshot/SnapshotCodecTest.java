@@ -203,15 +203,15 @@ public class SnapshotCodecTest {
         new DiscoveryModules().getSingleNodeModules(), new TransactionModules().getSingleNodeModules());
 
     TransactionManager txManager = injector.getInstance(TransactionManager.class);
-    txManager.startAndWait();
+    txManager.startAsync().awaitRunning();
 
     txManager.startLong();
 
     // shutdown to force a snapshot
-    txManager.stopAndWait();
+    txManager.stopAsync().awaitTerminated();
 
     TransactionStateStorage txStorage = injector.getInstance(TransactionStateStorage.class);
-    txStorage.startAndWait();
+    txStorage.startAsync().awaitRunning();
 
     // confirm that the in-progress entry is missing a type
     TransactionSnapshot snapshot = txStorage.getLatestSnapshot();
@@ -222,7 +222,7 @@ public class SnapshotCodecTest {
     Map.Entry<Long, TransactionManager.InProgressTx> entry =
         snapshot.getInProgress().entrySet().iterator().next();
     assertNull(entry.getValue().getType());
-    txStorage.stopAndWait();
+    txStorage.stopAsync().awaitTerminated();
 
 
     // start a new Tx manager to test fixup
@@ -234,7 +234,7 @@ public class SnapshotCodecTest {
         new DiscoveryModules().getSingleNodeModules(), new TransactionModules().getSingleNodeModules());
 
     TransactionManager txManager2 = injector2.getInstance(TransactionManager.class);
-    txManager2.startAndWait();
+    txManager2.startAsync().awaitRunning();
 
     // state should be recovered
     TransactionSnapshot snapshot2 = txManager2.getCurrentState();
@@ -244,16 +244,16 @@ public class SnapshotCodecTest {
     assertEquals(TransactionManager.InProgressType.LONG, inProgressTx.getValue().getType());
 
     // save a new snapshot
-    txManager2.stopAndWait();
+    txManager2.stopAsync().awaitTerminated();
 
     TransactionStateStorage txStorage2 = injector2.getInstance(TransactionStateStorage.class);
-    txStorage2.startAndWait();
+    txStorage2.startAsync().awaitRunning();
 
     TransactionSnapshot snapshot3 = txStorage2.getLatestSnapshot();
     // full snapshot should have deserialized correctly without any fixups
     assertEquals(snapshot2.getInProgress(), snapshot3.getInProgress());
     assertEquals(snapshot2, snapshot3);
-    txStorage2.stopAndWait();
+    txStorage2.stopAsync().awaitTerminated();
   }
 
   @Test
@@ -298,7 +298,7 @@ public class SnapshotCodecTest {
                                              new TransactionModules().getSingleNodeModules());
 
     TransactionManager txManager = injector.getInstance(TransactionManager.class);
-    txManager.startAndWait();
+    txManager.startAsync().awaitRunning();
 
     // Create a transaction and a checkpoint transaction
     Transaction transaction = txManager.startLong();
@@ -313,11 +313,11 @@ public class SnapshotCodecTest {
     txManager.invalidate(shortTx2.getTransactionId());
 
     // shutdown to force a snapshot
-    txManager.stopAndWait();
+    txManager.stopAsync().awaitTerminated();
 
     // Validate the snapshot on disk
     TransactionStateStorage txStorage = injector.getInstance(TransactionStateStorage.class);
-    txStorage.startAndWait();
+    txStorage.startAsync().awaitRunning();
 
     TransactionSnapshot snapshot = txStorage.getLatestSnapshot();
     Assert.assertTrue(Ordering.natural().isOrdered((snapshot.getInvalid())));
@@ -337,7 +337,7 @@ public class SnapshotCodecTest {
     Assert.assertEquals(TransactionManager.InProgressType.CHECKPOINT, inProgressTx.getType());
     Assert.assertTrue(inProgressTx.getCheckpointWritePointers().isEmpty());
 
-    txStorage.stopAndWait();
+    txStorage.stopAsync().awaitTerminated();
 
     // start a new Tx manager to see if the transaction is restored correctly.
     Injector injector2 = Guice.createInjector(new ConfigModule(conf),
@@ -345,7 +345,7 @@ public class SnapshotCodecTest {
                                               new TransactionModules().getSingleNodeModules());
 
     txManager = injector2.getInstance(TransactionManager.class);
-    txManager.startAndWait();
+    txManager.startAsync().awaitRunning();
 
     // state should be recovered
     snapshot = txManager.getCurrentState();
@@ -368,15 +368,15 @@ public class SnapshotCodecTest {
     txManager.commit(checkpointTx.getTransactionId(), checkpointTx.getWritePointer());
 
     // save a new snapshot
-    txManager.stopAndWait();
+    txManager.stopAsync().awaitTerminated();
 
     TransactionStateStorage txStorage2 = injector2.getInstance(TransactionStateStorage.class);
-    txStorage2.startAndWait();
+    txStorage2.startAsync().awaitRunning();
 
     snapshot = txStorage2.getLatestSnapshot();
     Assert.assertTrue(Ordering.natural().isOrdered((snapshot.getInvalid())));
     Assert.assertTrue(snapshot.getInProgress().isEmpty());
-    txStorage2.stopAndWait();
+    txStorage2.stopAsync().awaitTerminated();
   }
 
   private void assertTransactionVisibilityStateEquals(TransactionVisibilityState expected,
